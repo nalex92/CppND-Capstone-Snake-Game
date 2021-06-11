@@ -15,9 +15,14 @@ class Game {
   int GetScore() const;
   int GetSize() const;
 
+  void SetDifficultyFromUser();
+
+  int GetDifficulty() const;
+
  private:
   Snake snake;
   SDL_Point food;
+  int difficulty_;
 
   std::random_device dev;
   std::mt19937 engine;
@@ -27,7 +32,7 @@ class Game {
   int score{0};
 
   void PlaceFood();
-  void Update();
+  void Update(bool &running_ref);
 };
 
 #endif

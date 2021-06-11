@@ -2,12 +2,59 @@
 #include <iostream>
 #include "SDL.h"
 
+#define MIN_DIFFICULTY 0
+#define MEDIUM_DIFFICULTY 1
+#define MAX_DIFFICULTY 2
+
+float GameSpeedLUT[3] = {0.07f, 0.1f, 0.2f};
+float GameSpeedStepLUT[3] = {0.01f, 0.02f, 0.03f};
+
 Game::Game(std::size_t grid_width, std::size_t grid_height)
     : snake(grid_width, grid_height),
       engine(dev()),
       random_w(0, static_cast<int>(grid_width - 1)),
       random_h(0, static_cast<int>(grid_height - 1)) {
   PlaceFood();
+}
+
+void Game::SetDifficultyFromUser()
+{
+  int difficulty;
+
+  while(true)
+  {
+    std::cout << "Please introduce the desired difficulty (0 - Easy, 1 - Medium, 2 - Hard):";
+    std::cin >> difficulty;
+    std::cout << std::endl;
+
+    if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY)
+    {
+      std::cout << "Please introduce difficulty 0 (Easy), 1 (Medium), 2 (Hard)!\n";
+      std::cout << "Anything else introduced at this step is not valid.\n";
+      std::cout << "Game will start after a valid difficulty is introduced!!!\n";
+      continue;
+    }
+    else
+    {
+      difficulty_ = difficulty;
+      if (MIN_DIFFICULTY == difficulty)
+        std::cout << "Easy difficulty is set!\n";
+      else if (MEDIUM_DIFFICULTY == difficulty)
+        std::cout << "Medium difficulty is set!\n";
+      else
+        std::cout << "Hard difficulty is set!\n";
+
+      float speed = GameSpeedLUT[difficulty];
+      float speedStep = GameSpeedStepLUT[difficulty];
+      snake.SetGameParams(speed, speedStep);
+      break;
+    }
+  }
+}
+
+int Game::GetDifficulty() const
+{
+  return difficulty_;
 }
 
 void Game::Run(Controller const &controller, Renderer &renderer,
@@ -24,7 +71,7 @@ void Game::Run(Controller const &controller, Renderer &renderer,
 
     // Input, Update, Render - the main game loop.
     controller.HandleInput(running, snake);
-    Update();
+    Update(running);
     renderer.Render(snake, food);
 
     frame_end = SDL_GetTicks();
@@ -65,13 +112,13 @@ void Game::PlaceFood() {
   }
 }
 
-void Game::Update() {
-  if (!snake.alive) return;
+void Game::Update(bool &running_ref) {
+  if (!snake.GetAliveState()) { running_ref = false; return;}
 
   snake.Update();
 
-  int new_x = static_cast<int>(snake.head_x);
-  int new_y = static_cast<int>(snake.head_y);
+  int new_x = static_cast<int>(snake.GetHeadX());
+  int new_y = static_cast<int>(snake.GetHeadY());
 
   // Check if there's food over here
   if (food.x == new_x && food.y == new_y) {
@@ -79,7 +126,7 @@ void Game::Update() {
     PlaceFood();
     // Grow snake and increase speed.
     snake.GrowBody();
-    snake.speed += 0.02;
+    snake.IncrementSnakeSpeed();
   }
 }
 
